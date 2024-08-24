@@ -20,12 +20,12 @@ bypass_apis = [
 ]
 
 # Timeout for each request in seconds
-REQUEST_TIMEOUT = 3
+REQUEST_TIMEOUT = 1.5  # Lowered timeout for faster response
 
 async def fetch_bypass(client: httpx.AsyncClient, api_url: str) -> dict:
     """Fetch the bypass result from a given API URL."""
     try:
-        response = await asyncio.wait_for(client.get(api_url, timeout=REQUEST_TIMEOUT), REQUEST_TIMEOUT)
+        response = await client.get(api_url, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         result = response.json()
 
@@ -57,8 +57,10 @@ async def bypass(request: Request):
     api_urls = [api.format(encoded_url=encoded_url) for api in bypass_apis]
 
     async with httpx.AsyncClient() as client:
-        for api_url in api_urls:
-            result = await fetch_bypass(client, api_url)
+        tasks = [fetch_bypass(client, api_url) for api_url in api_urls]
+        results = await asyncio.gather(*tasks)
+
+        for result in results:
             if result.get("success"):
                 return {"result": result["result"]}  # Ensure the output key is "result"
 
@@ -66,7 +68,7 @@ async def bypass(request: Request):
     logger.error("All bypass attempts failed.")
     return JSONResponse(
         status_code=400,
-        content={"error": "Failed to bypass the URL or unsupported URL."}
+        content={"error": "Failed to bypass the URL or unsupported/invalid link."}
     )
 
 @app.exception_handler(Exception)
@@ -76,4 +78,4 @@ async def custom_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"message": "An unexpected error occurred. Please try again later."}
-)
+    )
