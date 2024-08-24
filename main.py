@@ -19,9 +19,12 @@ bypass_apis = [
     "https://bypass-friezggs-projects.vercel.app/bypass?url={}&api_key=speedbypasser"
 ]
 
+# Timeout configuration
+REQUEST_TIMEOUT = 5  # seconds
+
 async def fetch_bypass(client: httpx.AsyncClient, api_url: str) -> dict:
     try:
-        response = await client.get(api_url, timeout=10)
+        response = await client.get(api_url, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         result = response.json()
 
@@ -54,18 +57,27 @@ async def bypass(request: Request):
 
     async with httpx.AsyncClient() as client:
         tasks = [fetch_bypass(client, api_url) for api_url in api_urls]
-        results = await gather(*tasks, return_exceptions=True)
 
-        for result in results:
-            if isinstance(result, dict) and result.get("success"):
-                return {"bypass_result": result["data"], "source": result["source"]}
+        try:
+            results = await gather(*tasks, return_exceptions=True)
 
-        error_messages = [result.get("error") for result in results if isinstance(result, dict)]
-        logger.error(f"All bypass attempts failed: {error_messages}")
-        return JSONResponse(
-            status_code=400,
-            content={"error": "Failed to bypass the URL or unsupported/invalid link.", "details": error_messages}
-        )
+            for result in results:
+                if isinstance(result, dict) and result.get("success"):
+                    return {"bypass_result": result["data"], "source": result["source"]}
+
+            error_messages = [result.get("error") for result in results if isinstance(result, dict)]
+            logger.error(f"All bypass attempts failed: {error_messages}")
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Failed to bypass the URL or unsupported/invalid link.", "details": error_messages}
+            )
+        
+        except TimeoutError:
+            logger.error("Timeout: The request took too long to process.")
+            return JSONResponse(
+                status_code=504,
+                content={"error": "Timeout: The request took too long to process. Please try again later."}
+            )
 
 @app.exception_handler(Exception)
 async def custom_exception_handler(request: Request, exc: Exception):
