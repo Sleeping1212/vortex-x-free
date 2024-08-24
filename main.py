@@ -16,7 +16,7 @@ bypass_apis = [
     "https://hahabypasser-api.vercel.app/bypass?link={encoded_url}",
     "http://fi1.bot-hosting.net:6780/api/bypass?link={encoded_url}",
     "https://dlr.kys.gay/api/free/bypass?url={encoded_url}",
-    "https://bypass-friezggs-projects.vercel.app/bypass?url={encoded_url}&api_key=speedbypasser"
+    "https://bypass-friezggs-projects.vercel.app/api/bypass?url={encoded_url}&api_key=speedbypasser"
 ]
 
 # Timeout for each request in seconds
