@@ -12,7 +12,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 bypass_apis = [
-    "https://api.bypass.vip/bypass?url={encoded_url}",
     "https://hahabypasser-api.vercel.app/bypass?link={encoded_url}",
     "http://fi1.bot-hosting.net:6780/api/bypass?link={encoded_url}",
     "https://dlr.kys.gay/api/free/bypass?url={encoded_url}",
