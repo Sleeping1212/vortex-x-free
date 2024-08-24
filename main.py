@@ -15,7 +15,7 @@ bypass_apis = [
 @app.get("/api/bypass")
 async def bypass(request: Request):
     url = request.query_params.get('url')
-    
+
     if not url:
         return {"error": "No URL provided."}
 
@@ -26,12 +26,19 @@ async def bypass(request: Request):
 
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_api_url)
-            
+
             if response.status_code == 200:
                 result = response.json()
                 if 'error' not in result:
                     return result
-        except Exception:
+        except httpx.RequestError as e:
+            print(f"Request error: {e}")
+            continue
+        except httpx.HTTPStatusError as e:
+            print(f"HTTP status error: {e}")
+            continue
+        except Exception as e:
+            print(f"Unexpected error: {e}")
             continue
 
     return {"error": "Failed to bypass the URL or unsupported/invalid link."}
@@ -41,4 +48,4 @@ async def custom_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"message": "An unexpected error occurred."}
-    )
+            )
