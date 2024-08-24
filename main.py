@@ -1,9 +1,9 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 import httpx
 
 app = FastAPI()
 
-# List of bypass API endpoints with their respective URL query parameters
 bypass_apis = [
     "https://api.bypass.vip/bypass?url=",
     "https://hahabypasser-api.vercel.app/bypass?link=",
@@ -14,38 +14,31 @@ bypass_apis = [
 
 @app.get("/api/bypass")
 async def bypass(request: Request):
-    # Get the URL parameter from the query string
     url = request.query_params.get('url')
     
     if not url:
-        # No URL provided
         return {"error": "No URL provided."}
 
     for api in bypass_apis:
         try:
-            # Format the bypass API URL with the encoded URL
             encoded_url = httpx.quote(url, safe='')
             full_api_url = api.format(encoded_url)
 
-            # Call the bypass API
             async with httpx.AsyncClient() as client:
                 response = await client.get(full_api_url)
             
-            # Check if the response is successful
             if response.status_code == 200:
                 result = response.json()
                 if 'error' not in result:
-                    # If the bypass is successful, return the result
                     return result
-        except Exception as e:
-            # Log the exception and continue to the next API
-            print(f"Error calling {api}: {e}")
+        except Exception:
             continue
 
-    # If all bypass attempts fail
     return {"error": "Failed to bypass the URL or unsupported/invalid link."}
 
-# Start the FastAPI server with Uvicorn
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+@app.exception_handler(Exception)
+async def custom_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"message": "An unexpected error occurred."}
+    )
