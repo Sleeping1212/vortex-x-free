@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 import httpx
 import logging
 from urllib.parse import quote
-from asyncio import gather, TimeoutError
 
 app = FastAPI()
 
@@ -12,15 +11,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 bypass_apis = [
-    "https://api.bypass.vip/bypass?url={}",
-    "https://hahabypasser-api.vercel.app/bypass?link={}",
-    "http://fi1.bot-hosting.net:6780/api/bypass?link={}",
-    "https://dlr.kys.gay/api/free/bypass?url={}",
-    "https://bypass-friezggs-projects.vercel.app/bypass?url={}&api_key=speedbypasser"
+    "https://api.bypass.vip/bypass?url={encoded_url}",
+    "https://hahabypasser-api.vercel.app/bypass?link={encoded_url}",
+    "http://fi1.bot-hosting.net:6780/api/bypass?link={encoded_url}",
+    "https://dlr.kys.gay/api/free/bypass?url={encoded_url}",
+    "https://bypass-friezggs-projects.vercel.app/bypass?url={encoded_url}&api_key=speedbypasser"
 ]
 
-# Timeout configuration
-REQUEST_TIMEOUT = 5  # seconds
+# Timeout for each request in seconds
+REQUEST_TIMEOUT = 3
 
 async def fetch_bypass(client: httpx.AsyncClient, api_url: str) -> dict:
     try:
@@ -56,28 +55,17 @@ async def bypass(request: Request):
     api_urls = [api.format(encoded_url) for api in bypass_apis]
 
     async with httpx.AsyncClient() as client:
-        tasks = [fetch_bypass(client, api_url) for api_url in api_urls]
+        for api_url in api_urls:
+            result = await fetch_bypass(client, api_url)
+            if result.get("success"):
+                return {"bypass_result": result["data"], "source": result["source"]}
 
-        try:
-            results = await gather(*tasks, return_exceptions=True)
-
-            for result in results:
-                if isinstance(result, dict) and result.get("success"):
-                    return {"bypass_result": result["data"], "source": result["source"]}
-
-            error_messages = [result.get("error") for result in results if isinstance(result, dict)]
-            logger.error(f"All bypass attempts failed: {error_messages}")
-            return JSONResponse(
-                status_code=400,
-                content={"error": "Failed to bypass the URL or unsupported/invalid link.", "details": error_messages}
-            )
-        
-        except TimeoutError:
-            logger.error("Timeout: The request took too long to process.")
-            return JSONResponse(
-                status_code=504,
-                content={"error": "Timeout: The request took too long to process. Please try again later."}
-            )
+    # If no successful result was obtained
+    logger.error("All bypass attempts failed.")
+    return JSONResponse(
+        status_code=400,
+        content={"error": "Failed to bypass the URL or unsupported/invalid link."}
+    )
 
 @app.exception_handler(Exception)
 async def custom_exception_handler(request: Request, exc: Exception):
@@ -85,4 +73,4 @@ async def custom_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"message": "An unexpected error occurred. Please try again later."}
-            )
+)
