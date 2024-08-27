@@ -55,7 +55,10 @@ async def bypass(request: Request):
     if not url:
         raise HTTPException(status_code=400, detail="No URL provided.")
     
+    # Encode the URL properly using quote
     encoded_url = quote(url, safe='')
+    logger.info(f"Encoded URL: {encoded_url}")  # Log the encoded URL for debugging
+    
     api_urls = [api.format(encoded_url=encoded_url) for api in bypass_apis]
 
     async with httpx.AsyncClient() as client:
@@ -80,4 +83,4 @@ async def custom_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"message": "An unexpected error occurred. Please try again later."}
-        )
+                )
