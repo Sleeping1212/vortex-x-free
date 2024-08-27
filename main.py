@@ -28,9 +28,12 @@ async def fetch_bypass(client: httpx.AsyncClient, api_url: str) -> dict:
         response.raise_for_status()
         result = response.json()
 
+        # Adjust the key handling based on response structure
         if 'error' not in result:
-            # Ensure the result is always under the "result" key
-            bypassed_result = result.get('bypassed', result)
+            if 'key' in result:
+                bypassed_result = result['key']
+            else:
+                bypassed_result = result.get('bypassed', result)
             logger.info(f"Successfully bypassed URL with {api_url}")
             return {"success": True, "result": bypassed_result}
         else:
@@ -61,7 +64,7 @@ async def bypass(request: Request):
 
         for result in results:
             if result.get("success"):
-                return {"result": result["result"]}  # Ensure the output key is "result"
+                return {"result": result["result"]}
 
     # If no successful result was obtained
     logger.error("All bypass attempts failed.")
@@ -77,4 +80,4 @@ async def custom_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"message": "An unexpected error occurred. Please try again later."}
-    )
+        )
