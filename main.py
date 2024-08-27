@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 bypass_apis = [
     "https://hahabypasser-api.vercel.app/bypass?link={encoded_url}",
     "http://fi1.bot-hosting.net:6780/api/bypass?link={encoded_url}",
-    "https://dlr.kys.gay/api/free/bypass?url={encoded_url}",
+    "https%3A%2F%2Fdlr.kys.gay%2Fapi%2Ffree%2Fbypass%3Furl%3D%7Bencoded_url%7D",  # Using the exact encoded URL
     "https://bypass-friezggs-projects.vercel.app/api/bypass?url={encoded_url}&api_key=speedbypasser"
 ]
 
@@ -31,11 +31,11 @@ async def fetch_bypass(client: httpx.AsyncClient, api_url: str) -> dict:
         # Adjust the key handling based on response structure
         if 'error' not in result:
             if 'key' in result:
-                bypassed_result = result['key']
+                bypassed_result = {'key': result['key']}
             else:
-                bypassed_result = result.get('bypassed', result)
+                bypassed_result = {'result': result.get('bypassed', result)}
             logger.info(f"Successfully bypassed URL with {api_url}")
-            return {"success": True, "result": bypassed_result}
+            return {"success": True, **bypassed_result}
         else:
             logger.warning(f"Error in response from {api_url}: {result.get('error')}")
             return {"success": False, "error": result.get('error')}
@@ -55,11 +55,12 @@ async def bypass(request: Request):
     if not url:
         raise HTTPException(status_code=400, detail="No URL provided.")
     
-    # Encode the URL properly using quote
+    # Use quote to encode the URL properly
     encoded_url = quote(url, safe='')
     logger.info(f"Encoded URL: {encoded_url}")  # Log the encoded URL for debugging
     
-    api_urls = [api.format(encoded_url=encoded_url) for api in bypass_apis]
+    # Use the provided encoded URL for the dlr API and construct URLs for others
+    api_urls = [api.format(encoded_url=encoded_url) if '{encoded_url}' in api else api for api in bypass_apis]
 
     async with httpx.AsyncClient() as client:
         tasks = [fetch_bypass(client, api_url) for api_url in api_urls]
@@ -67,7 +68,7 @@ async def bypass(request: Request):
 
         for result in results:
             if result.get("success"):
-                return {"result": result["result"]}
+                return result  # Directly return the successful result
 
     # If no successful result was obtained
     logger.error("All bypass attempts failed.")
@@ -83,4 +84,4 @@ async def custom_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"message": "An unexpected error occurred. Please try again later."}
-                )
+        )
