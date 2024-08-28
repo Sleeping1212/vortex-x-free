@@ -53,7 +53,7 @@ async def bypass(request: Request):
     url = request.query_params.get('url')
     
     if not url:
-        raise HTTPException(status_code=400, detail="THE API HAS BEEN SET TO PRIVATE.")
+        raise HTTPException(status_code=400, detail="No URL provided.")
     
     # Use quote to encode the URL properly
     encoded_url = quote(url, safe='')
@@ -68,14 +68,13 @@ async def bypass(request: Request):
 
         for result in results:
             if result.get("success"):
-                # Return the private message instead of the actual result
-                return {"message": "THE API HAS BEEN SET TO PRIVATE."}
+                return result  # Directly return the successful result
 
     # If no successful result was obtained
     logger.error("All bypass attempts failed.")
     return JSONResponse(
         status_code=400,
-        content={"message": "THE API HAS BEEN SET TO PRIVATE."}
+        content={"error": "Failed to bypass the URL or unsupported/invalid link."}
     )
 
 @app.exception_handler(Exception)
@@ -84,5 +83,5 @@ async def custom_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unexpected error: {exc}")
     return JSONResponse(
         status_code=500,
-        content={"message": "THE API HAS BEEN SET TO PRIVATE."}
+        content={"message": "An unexpected error occurred. Please try again later."}
         )
