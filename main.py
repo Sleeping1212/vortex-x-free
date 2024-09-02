@@ -13,11 +13,10 @@ logger = logging.getLogger(__name__)
 
 bypass_apis = [
     "https://hahabypasser-api.vercel.app/bypass?link={encoded_url}",
-    "}
     "http://fi5.bot-hosting.net:20276/api/codex?link={encoded_url}",
     "https%3A%2F%2Fdlr.kys.gay%2Fapi%2Ffree%2Fbypass%3Furl%3D%7Bencoded_url%7D",  # Using the exact encoded URL
-    "https://bypass-friezggs-projects.vercel.app/api/bypass?url={encoded_url}&api_key=speedbypasser"
-    "http://fi1.bot-hosting.net:6780/api/bypass?link={encoded_url}"
+    "https://bypass-friezggs-projects.vercel.app/api/bypass?url={encoded_url}&api_key=speedbypasser",
+    "http://fi1.bot-hosting.net:6780/api/bypass?link={encoded_url}",
 ]
 
 # Timeout for each request in seconds
